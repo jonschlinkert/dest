@@ -4,10 +4,14 @@
 
 Nothing to see yet. This is an experiment to create a `dest` plugin for [template](https://github.com/jonschlinkert/template) with the following options:
 
-* [x] `streams`: (this is the default, it's basically just a vinyl adapter that is a slimmed-down alternative to `vfs.dest`.)
+* [x] `streams`: (this is the default, it's basically just a vinyl adapter that will be a slimmed-down alternative to `vfs.dest`.)
 * [ ] `promise`
 * [ ] `sync`
 * [ ] `async`
+
+TODO:
+
+* links to vinyl, bluebird, other libs...
 
 ## Install
 

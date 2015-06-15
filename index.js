@@ -112,8 +112,8 @@ function normalize(dest, file, options, cb) {
 
   var destPath = (typeof dest === 'string' ? dest : dest(file));
   var basePath = path.resolve(cwd, destPath);
-  var destDir = path.resolve(basePath, file.relative);
-  var dir = path.dirname(destDir);
+  var filepath = path.resolve(basePath, path.basename(file.relative));
+  var dir = path.dirname(filepath);
 
   // wire up new properties
   file.stat = (file.stat || new fs.Stats());
@@ -121,11 +121,11 @@ function normalize(dest, file, options, cb) {
   file.flag = opts.flag;
   file.cwd = cwd;
   file.base = basePath;
-  file.path = destDir;
+  file.path = filepath;
 
   // mkdirp the folder the file is going in
   mkdirp(dir, opts.dirMode, function (err) {
     if (err) return cb(err);
-    cb(null, destDir);
+    cb(null, filepath);
   });
 }

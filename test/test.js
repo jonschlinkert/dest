@@ -955,4 +955,41 @@ describe('dest stream', function() {
     stream.write(file);
     stream.end();
   });
+
+  it('should expose the normalize function', function () {
+    should.exist(dest.normalize);
+    (typeof dest.normalize).should.equal('function');
+  });
+
+  it('should use a dest function on the file object', function (done) {
+    var inputPath = path.join(__dirname, './fixtures/test.coffee');
+
+    var expectedFile = new File({
+      base: __dirname,
+      cwd: __dirname,
+      path: inputPath,
+      contents: null
+    });
+
+    var count = 0;
+    expectedFile.dest = function (dir, opts, cb) {
+      count++;
+      dest.normalize(dir, this, opts, cb);
+    };
+
+    var onEnd = function(){
+      count.should.equal(1);
+      buffered.length.should.equal(1);
+      buffered[0].should.equal(expectedFile);
+      done();
+    };
+
+    var stream = dest(path.join(__dirname, './out-fixtures/'));
+
+    var buffered = [];
+    bufferStream = through.obj(dataWrap(buffered.push.bind(buffered)), onEnd);
+    stream.pipe(bufferStream);
+    stream.write(expectedFile);
+    stream.end();
+  });
 });

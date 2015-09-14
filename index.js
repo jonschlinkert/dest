@@ -7,8 +7,9 @@ var extend = require('extend-shallow');
 var through = require('through2');
 var mkdirp = require('mkdirp');
 
+module.exports = dest;
 
-module.exports = function dest(dir, options) {
+function dest(dir, options) {
   var stream = through.obj(function (file, enc, cb) {
     var opts = normalizeOpts(file, options);
     if (typeof file.dest === 'function') {
@@ -18,7 +19,7 @@ module.exports = function dest(dir, options) {
       });
     }
 
-    normalize(dir, file, opts, function (err, fp) {
+    dest.normalize(dir, file, opts, function (err, fp) {
       if (err) return cb(err);
       writeFile(fp, file, opts, cb);
     });
@@ -152,7 +153,7 @@ function writeSymbolicLink(destDir, file, cb) {
   });
 }
 
-function normalize(dest, file, opts, cb) {
+dest.normalize = function normalize(dest, file, opts, cb) {
   opts = opts || {};
   var cwd = path.resolve(opts.cwd);
 
@@ -187,4 +188,4 @@ function normalize(dest, file, opts, cb) {
   file.path = filepath;
 
   cb(null, filepath);
-}
+};

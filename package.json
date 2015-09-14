@@ -1,7 +1,7 @@
 {
   "name": "dest",
   "description": "Plugin for Template, for writing a file to the file system.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "homepage": "https://github.com/jonschlinkert/dest",
   "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
   "repository": "jonschlinkert/dest",

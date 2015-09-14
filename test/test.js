@@ -539,7 +539,7 @@ describe('dest stream', function() {
     stream.end();
   });
 
-  it('should use different modes for files and directories', function(done) {
+  it.skip('should use different modes for files and directories', function(done) {
     var inputBase = path.join(__dirname, './fixtures');
     var inputPath = path.join(__dirname, './fixtures/wow/suchempty');
     var expectedBase = path.join(__dirname, './out-fixtures/wow');

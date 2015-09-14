@@ -1,7 +1,7 @@
 {
   "name": "dest",
   "description": "Plugin for Template, for writing a file to the file system.",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "homepage": "https://github.com/jonschlinkert/dest",
   "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
   "repository": "jonschlinkert/dest",
@@ -20,12 +20,20 @@
     "test": "mocha"
   },
   "dependencies": {
-    "extend-shallow": "^1.1.4",
+    "extend-shallow": "^2.0.1",
+    "graceful-fs": "^4.1.2",
     "mkdirp": "^0.5.1",
-    "strip-bom": "^1.0.0",
     "through2": "^2.0.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "buffer-equal": "0.0.1",
+    "mocha": "^2.3.2",
+    "rimraf": "^2.4.3",
+    "should": "^7.1.0",
+    "sinon": "^1.16.1",
+    "vinyl": "^0.5.3",
+    "vinyl-fs": "^1.0.0"
+  },
   "keywords": [
     "dest",
     "destination",

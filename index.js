@@ -1,43 +1,35 @@
 'use strict';
 
 var fs = require('fs');
-var gfs = require('graceful-fs');
 var path = require('path');
-var extend = require('extend-shallow');
-var through = require('through2');
-var mkdirp = require('mkdirp');
-
-module.exports = dest;
+var utils = require('./utils');
 
 function dest(dir, options) {
-  var stream = through.obj(function (file, enc, cb) {
-    var opts = normalizeOpts(file, options);
-    if (typeof file.dest === 'function') {
-      return file.dest(dir, opts, function (err, fp) {
-        if (err) return cb(err);
-        writeFile(fp, file, opts, cb);
-      });
-    }
+  if (!dir) {
+    throw new TypeError('expected dest to be a string or function.');
+  }
 
-    dest.normalize(dir, file, opts, function (err, fp) {
+  var stream = utils.through.obj(function (file, enc, cb) {
+    var opts = normalizeOpts(file, options);
+
+    normalize(dir, file, opts, function (err, fp) {
       if (err) return cb(err);
       writeFile(fp, file, opts, cb);
     });
   });
   stream.resume();
   return stream;
-};
+}
 
 function writeFile(fp, file, opts, cb) {
-  // mkdirp the folder the file is going in
-  mkdirp(path.dirname(fp), opts.dirMode, function (err) {
+  utils.mkdirp(path.dirname(fp), opts.dirMode, function (err) {
     if (err) return cb(err);
     writeContents(fp, file, cb);
   });
 }
 
 function normalizeOpts(file, options) {
-  var opts = extend({
+  var opts = utils.extend({
     cwd: process.cwd(),
     mode: (file.stat ? file.stat.mode : null),
     dirMode: null,
@@ -53,18 +45,18 @@ function streamFile(file, opts, cb) {
   cb(null, file);
 }
 
-function writeContents(writePath, file, cb) {
+function writeContents(fp, file, cb) {
   if (file.isDirectory()) {
-    return writeDir(writePath, file, written);
+    return writeDir(fp, file, written);
   }
   if (file.isStream()) {
-    return writeStream(writePath, file, written);
+    return writeStream(fp, file, written);
   }
   if (file.isBuffer()) {
-    return writeBuffer(writePath, file, written);
+    return writeBuffer(fp, file, written);
   }
   if (file.symlink) {
-    return writeSymbolicLink(writePath, file, written);
+    return writeSymbolicLink(fp, file, written);
   }
   if (file.isNull()) {
     return complete();
@@ -83,7 +75,7 @@ function writeContents(writePath, file, cb) {
       return complete();
     }
 
-    fs.stat(writePath, function(err, st) {
+    fs.stat(fp, function(err, st) {
       if (err) {
         return complete(err);
       }
@@ -92,7 +84,7 @@ function writeContents(writePath, file, cb) {
       if (currentMode === expectedMode) {
         return complete();
       }
-      fs.chmod(writePath, expectedMode, complete);
+      fs.chmod(fp, expectedMode, complete);
     });
   }
 
@@ -113,23 +105,23 @@ function writeContents(writePath, file, cb) {
 
 function writeBuffer(destDir, file, cb) {
   var opt = { mode: file.stat.mode, flag: file.flag };
-  gfs.writeFile(destDir, file.contents, opt, cb);
+  utils.fs.writeFile(destDir, file.contents, opt, cb);
 }
 
 function writeDir(destDir, file, cb) {
-  mkdirp(destDir, file.stat.mode, cb);
+  utils.mkdirp(destDir, file.stat.mode, cb);
 }
 
-function writeStream(destDir, file, cb) {
+function writeStream(dir, file, cb) {
   var opts = {mode: file.stat.mode, flag: file.flag};
 
-  var outStream = gfs.createWriteStream(destDir, opts);
+  var stream = utils.fs.createWriteStream(dir, opts);
 
   file.contents.once('error', complete);
-  outStream.once('error', complete);
-  outStream.once('finish', success);
+  stream.once('error', complete);
+  stream.once('finish', success);
 
-  file.contents.pipe(outStream);
+  file.contents.pipe(stream);
 
   function success() {
     streamFile(file, {}, complete);
@@ -138,14 +130,14 @@ function writeStream(destDir, file, cb) {
   // cleanup
   function complete(err) {
     file.contents.removeListener('error', cb);
-    outStream.removeListener('error', cb);
-    outStream.removeListener('finish', success);
+    stream.removeListener('error', cb);
+    stream.removeListener('finish', success);
     cb(err);
   }
 }
 
 function writeSymbolicLink(destDir, file, cb) {
-  gfs.symlink(file.symlink, destDir, function (err) {
+  utils.fs.symlink(file.symlink, destDir, function (err) {
     if (err && err.code !== 'EEXIST') {
       return cb(err);
     }
@@ -153,39 +145,100 @@ function writeSymbolicLink(destDir, file, cb) {
   });
 }
 
-dest.normalize = function normalize(dest, file, opts, cb) {
-  opts = opts || {};
-  var cwd = path.resolve(opts.cwd);
-
-  if (typeof dest !== 'string' && typeof dest !== 'function') {
-    throw new Error('Invalid output folder');
+function normalize(dir, file, opts, cb) {
+  if (typeof opts === 'function') {
+    cb = opts;
+    opts = {};
   }
 
-  var destPath = (typeof dest === 'string' ? dest : dest(file));
+  opts = opts || {};
+  if (file.options) {
+    opts = utils.extend({}, opts, file.options);
+  }
+
+  var cwd = utils.resolve(opts.cwd || '');
+  var filepath;
+  var destDir;
+
+  if (opts.destbase) {
+    cwd = path.resolve(utils.resolve(opts.destbase), cwd);
+  }
+
+  cwd = path.resolve(cwd);
+
+  if (opts.expand === true) {
+    if (typeof dir !== 'string') {
+      return cb(new TypeError('expected dest to be a string with expand=true'));
+    }
+
+    filepath = path.resolve(dir);
+    destDir = path.dirname(filepath);
+
+  } else {
+    if (typeof dir === 'function') {
+      destDir = dir(file);
+
+    } else if (typeof dir === 'string') {
+      destDir = dir;
+
+    } else {
+      return cb(new TypeError('expected dest to be a string or function.'));
+    }
+  }
 
   var base = opts.base;
-  if (base && typeof base !== 'string' && typeof base !== 'function') {
-    throw new Error('Invalid base option');
+  var basePath;
+
+  if (!base) {
+    basePath = path.resolve(cwd, destDir);
+
+  } else if (typeof base === 'function') {
+    basePath = base(file);
+
+  } else if (typeof base === 'string') {
+    basePath = base;
+
+  } else {
+    throw new TypeError('expected base to be a string, function or undefined.');
   }
 
-  var basePath = base
-    ? (typeof base === 'string' ? base : base(file))
-    : path.resolve(cwd, destPath);
-
-  if (typeof basePath !== 'string') {
-    throw new Error('Invalid base option');
+  if (opts.flatten === true) {
+    file.path = path.basename(file.path);
   }
 
-  var filepath = path.resolve(basePath, path.basename(file.relative));
-  var dir = path.dirname(filepath);
+  if (typeof filepath === 'undefined') {
+    filepath = path.resolve(basePath, file.relative);
+  }
 
-  // wire up new properties
-  file.stat = (file.stat || new gfs.Stats());
+  if (typeof opts.ext !== 'undefined') {
+    filepath = utils.rewriteExt(filepath, opts);
+  }
+
+  // update stat properties
+  file.stat = (file.stat || new fs.Stats());
   file.stat.mode = opts.mode;
   file.flag = opts.flag;
+
+  // update path properties
   file.cwd = cwd;
   file.base = basePath;
   file.path = filepath;
 
+  if (typeof file.dest === 'function') {
+    return file.dest(filepath, opts, cb);
+  }
+
   cb(null, filepath);
-};
+}
+
+/**
+ * Expose `dest`
+ */
+
+module.exports = dest;
+
+/**
+ * Expose `normalize`
+ */
+
+module.exports.normalize = normalize;

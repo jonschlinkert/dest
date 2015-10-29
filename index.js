@@ -238,7 +238,7 @@ function normalize(dir, file, opts, cb) {
 module.exports = dest;
 
 /**
- * Expose `normalize`
+ * Expose `dest`
  */
 
 module.exports.normalize = normalize;

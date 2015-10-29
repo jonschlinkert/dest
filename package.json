@@ -1,7 +1,7 @@
 {
   "name": "dest",
-  "description": "Plugin for Template, for writing a file to the file system.",
-  "version": "0.3.0",
+  "description": "Customized implementation of the dest method from vinyl.",
+  "version": "0.3.1",
   "homepage": "https://github.com/jonschlinkert/dest",
   "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
   "repository": "jonschlinkert/dest",
@@ -10,7 +10,8 @@
   },
   "license": "MIT",
   "files": [
-    "index.js"
+    "index.js",
+    "utils.js"
   ],
   "main": "index.js",
   "engines": {
@@ -53,5 +54,11 @@
     "stream",
     "vinyl",
     "write"
-  ]
+  ],
+  "verb": {
+    "related": {
+      "description": "",
+      "list": []
+    }
+  }
 }
